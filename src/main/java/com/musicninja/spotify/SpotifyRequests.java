@@ -15,7 +15,9 @@ import com.wrapper.spotify.methods.PlaylistCreationRequest;
 import com.wrapper.spotify.methods.PlaylistRequest;
 import com.wrapper.spotify.methods.PlaylistTracksRequest;
 import com.wrapper.spotify.methods.TopTracksRequest;
+import com.wrapper.spotify.methods.TrackSearchRequest;
 import com.wrapper.spotify.methods.UserPlaylistsRequest;
+import com.wrapper.spotify.methods.UserRequest;
 import com.wrapper.spotify.models.Page;
 import com.wrapper.spotify.models.Playlist;
 import com.wrapper.spotify.models.PlaylistTrack;
@@ -65,6 +67,13 @@ public class SpotifyRequests {
 		String accessToken = TokenManager.getUserToken(user);
 		API.setAccessToken(accessToken);
 		final CurrentUserRequest request = API.getMe().build();
+		return request.get();
+	}
+	
+	public static User getUser(UserEntity user, String userId) throws IOException, WebApiException {
+		String accessToken = TokenManager.getUserToken(user);
+		API.setAccessToken(accessToken);
+		final UserRequest request = API.getUser(userId).build();
 		return request.get();
 	}
 	
@@ -243,6 +252,63 @@ public class SpotifyRequests {
 		return null;
 	}
 	
+	public static Track getSongs(UserEntity user, String artist, String title) {
+		
+		String accessToken = TokenManager.getUserToken(user);
+		API.setAccessToken(accessToken);
+		final TrackSearchRequest request = API.searchTracks(artist + " " + title)
+				.build();
+		
+		try {
+			final Page<Track> tracks = request.get();
+			
+			if (tracks != null) {
+				List<Track> tracksList = tracks.getItems();
+				if (tracksList != null && !tracksList.isEmpty()) {
+					return tracksList.get(0);
+				}
+			}			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (WebApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+	
+	public static Playlist createPlaylist(UserEntity user, String title) {
+		String accessToken = TokenManager.getUserToken(user);
+		API.setAccessToken(accessToken);
+		return createPlaylist(user.getSpotifyUsername(),title);
+	}
+	
+	private static Playlist createPlaylist(String spotifyUsername, String title) {
+		
+		final PlaylistCreationRequest request = API.createPlaylist(spotifyUsername, title)
+				.publicAccess(false)
+				.build();
+			
+		try {
+			Playlist playlist = request.get();
+			
+			if (playlist != null) {
+				
+				System.out.println("Created playlist '" + title + "' for user: " + spotifyUsername);
+				return playlist;
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (WebApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return null;
+	}
 	
 	public static boolean createPlaylistWithTracks(UserEntity user, String title, List<String> tracksToAdd) {
 		
@@ -260,12 +326,8 @@ public class SpotifyRequests {
 				for (String track : tracksToAdd) {
 					trackUrisToAdd.add("spotify:track:" + track);
 				}
-				final AddTrackToPlaylistRequest request2 = API.addTracksToPlaylist(user.getSpotifyUsername(), playlist.getId(), trackUrisToAdd)
-						.build();
 				
-				SnapshotResult result = request2.get();
-				System.out.println(result.getSnapshotId());
-				return true;
+				return addTracksToPlaylist(user, playlist.getId(), trackUrisToAdd);
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -278,4 +340,31 @@ public class SpotifyRequests {
 		return false;
 	}
 	
+	public static boolean addTracksToPlaylist(UserEntity user, String playlistId, List<String> tracksToAdd) {
+		
+		String accessToken = TokenManager.getUserToken(user);
+		API.setAccessToken(accessToken);
+		return addTracksToPlaylist(user.getSpotifyUsername(), playlistId, tracksToAdd);
+	}
+	
+	public static boolean addTracksToPlaylist(String username, String playlistId, List<String> tracksToAdd) {
+		
+		final AddTrackToPlaylistRequest request = API.addTracksToPlaylist(username, playlistId, tracksToAdd)
+				.position(0)
+				.build();
+		
+		try {
+			SnapshotResult result = request.get();
+			
+			System.out.println(result.getSnapshotId());
+			
+			return true;
+		} catch (IOException | WebApiException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+			System.err.println(e.getMessage());
+			System.err.println(e.getCause());
+		}
+		return false;
+	}
 }

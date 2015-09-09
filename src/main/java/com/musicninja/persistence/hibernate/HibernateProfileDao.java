@@ -1,6 +1,5 @@
 package com.musicninja.persistence.hibernate;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.hibernate.Criteria;
@@ -54,7 +53,7 @@ public class HibernateProfileDao implements IProfileDao {
 
 	@Override
 	@Transactional
-	public Collection<ProfileEntity> getProfilesByUser(UserEntity owner) {
+	public List<ProfileEntity> getProfilesByUser(UserEntity owner) {
 		Criteria criteria = currentSession().createCriteria(ProfileEntity.class);
 		@SuppressWarnings("unchecked")
 		List<ProfileEntity> profiles = criteria.add(Restrictions.eq("owner", owner.getId())).list();

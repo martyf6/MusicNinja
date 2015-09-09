@@ -59,6 +59,23 @@ td.profile-owner {
 }
 
 /*
+ * Reddit Playlist
+ */
+ 
+.reddit-playlist-container .update-status {
+	font-weight: bold;
+    padding: 12px;
+} 
+ 
+.reddit-playlist-form .form-group {
+	margin-bottom: 50px;
+}
+
+.reddit-playlist-form input[type=submit] {
+	margin-bottom: 15px;
+}
+
+/*
  * Global add-ons
  */
 

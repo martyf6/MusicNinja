@@ -30,4 +30,5 @@
     
     <bean id="userDao" class="com.musicninja.persistence.hibernate.HibernateUserDao"></bean>
     <bean id="profileDao" class="com.musicninja.persistence.hibernate.HibernateProfileDao"></bean>
+    <bean id="redditPlaylistDao" class="com.musicninja.persistence.hibernate.HibernateRedditPlaylistDao"></bean>
 </beans>

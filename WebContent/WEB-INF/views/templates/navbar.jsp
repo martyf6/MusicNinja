@@ -11,6 +11,7 @@
 				<li><a href="home">Home</a></li>
 	            <li><a href="playlists">Playlists</a></li>
 	            <li><a href="profiles">Profiles</a></li>
+	            <li><a href="reddit">Reddit</a></li>
 	        </ul>
 			<ul class="nav navbar-nav navbar-right">
 				<li><a href="<c:url value='/j_spring_security_logout' />">Sign Out</a></li>

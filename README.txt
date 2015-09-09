@@ -33,6 +33,8 @@ create and add a spotify playlist from the generated recommendations to the user
 
 - user page (currently just display's spotify id)
 
+- add sortable columns to playlist and profile views
+
 - show associated profiles when viewing a playlist
 
 - twitter id - create link
@@ -82,6 +84,40 @@ data in an extremely obscure way)
 - look into custom exception implementations
 	- if a user doesn't have spotify, but makes spotify requests
 	
+*** NOTES:
+
+- spotify playlist requests return partially populated User objects (which is why only the
+user id is being displayed and not the display name... this is omitted from the response).
+In order to get the display name, we need to make a separate User request with the user id.
+	
+*** IDEAS:
+
+- pull music from various music services - both curated and generated:
+	curated: 
+		- reddit music blogs (there are tons and tons of subs for each genre imaginable)
+		- acclaimedmusic.net (most acclaimed albums and songs of all time, sorted)
+		- pitchfork
+		- stereogum
+		- mixerbox?
+		
+	generated:
+		- gnoosic (although this is based on a massive database of personal user preferences)
+		- tastekid.com (very similar to gnoosic), has an API
+		- music-map (generated via gnod)
+		- everynoise.com (uses both echonest and spotify to deliver genre radio - also has interesting links/reads at the bottom)
+
+- conduct a 'perfectplaylist' type crowd sourcing utility for playlist generation
+
+- create a spotify 'current' playlist service.  Essentially, create services that provide a dynamic spotify playlist,
+changing either daily, weekly, etc.  For instance, a spotify hiphop playlist that gets the hottest new track each day
+from reddits hiphop subthread and adds it to a playlist you have, removing the oldest one to keep the playlist size consistent
+and only containing the most recent 'hot' tracks always available in a spotify playlist of yours waiting for you.
+
+*** INSPIRATION:
+
+http://evolver.fm/appdb/keyword/echonest/
+
+
 	
 *** REFERENCES:
 
@@ -98,5 +134,7 @@ http://static.echonest.com/labs/demo.html
 
 Echonest + Spotify:
 http://static.echonest.com/enspex/
+
+
 
 

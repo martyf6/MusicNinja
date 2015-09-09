@@ -8,12 +8,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.validation.Valid;
+
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,10 +29,16 @@ import com.echonest.api.v4.GeneralCatalog;
 import com.echonest.api.v4.SongCatalogItem;
 import com.musicninja.echonest.EchonestRequests;
 import com.musicninja.echonest.EchonestRequests.ProfileType;
+import com.musicninja.form.Registration;
 import com.musicninja.model.ProfileEntity;
+import com.musicninja.model.RedditPlaylistEntity;
 import com.musicninja.model.UserEntity;
 import com.musicninja.persistence.IProfileDao;
+import com.musicninja.persistence.IRedditPlaylistDao;
 import com.musicninja.persistence.IUserDao;
+import com.musicninja.reddit.PostPeriod;
+import com.musicninja.reddit.RedditRequests;
+import com.musicninja.reddit.SimpleSong;
 import com.musicninja.spotify.SpotifyRequests;
 import com.musicninja.suggest.PlaylistFilter;
 import com.musicninja.suggest.Preference;
@@ -57,6 +66,9 @@ public class MusicNinjaController {
 	
 	@Autowired
 	private IProfileDao profileDao;
+	
+	@Autowired
+	private IRedditPlaylistDao redditPlaylistDao;
 	
 	@RequestMapping(value = {"/", "/home"}, method = RequestMethod.GET)
 	public String getHomePage(Model model, Principal principal) {
@@ -134,6 +146,29 @@ public class MusicNinjaController {
 		return "home";
 	}
 	
+	@RequestMapping(value = {"/spotify_user"}, method = RequestMethod.GET)
+	public String getMe(
+			@RequestParam("id") String userId,
+			Model model, Principal principal) {
+		
+		// get the active user
+		String username = principal.getName();
+		model.addAttribute("username", username);
+		
+		UserEntity user = userDao.getUserByUsername(username);
+		try {
+			User spotifyUser = SpotifyRequests.getUser(user, userId);
+			System.out.println(spotifyUser.getDisplayName());
+			System.out.println(spotifyUser.getEmail());
+			System.out.println(spotifyUser.getId());
+			System.out.println(spotifyUser.getUri());
+		} catch (Exception e) {
+			System.out.println("Something went wrong!" + e.getMessage());
+		}
+		
+		return "home";
+	}
+	
 	@RequestMapping(value = {"/playlists"}, method = RequestMethod.GET)
 	public String getPlaylists(Model model, Principal principal) {
 		
@@ -191,6 +226,10 @@ public class MusicNinjaController {
 		
 		// TODO: get artist bio, top songs, profile, news, etc.
 		Map<String,String> artistSummary = EchonestRequests.getArtistSummary("spotify:artist:" + artistId);
+		
+		// currently delivers:
+		// familiarity (double), hotttnesss (double), songs (list of strs), genres (list of obj w/ 'name' attr), 
+		// discovery (double), facebook (str id), name (str)
 		
 		// TODO: better integrate with echonest and spotify top tracks
 		// the Echonest songs are kind of lame... let's substitute for Spotify top songs
@@ -415,6 +454,183 @@ public class MusicNinjaController {
 		model.addAttribute("tracks", tracks);
 		
 		return "create-profile";
+	}
+	
+	@RequestMapping(value = {"/reddit"}, method = RequestMethod.GET)
+	public String getReddit(
+			Model model, Principal principal) {
+		
+		// get the active user
+		String username = principal.getName();
+		
+		UserEntity user = userDao.getUserByUsername(username);
+		model.addAttribute("owner", user);
+		
+		List<RedditPlaylistEntity> redditPlaylists = redditPlaylistDao.getRedditPlaylistsByUser(user);
+		
+		if (redditPlaylists != null && !redditPlaylists.isEmpty()) {
+			
+			// provide the details for the user's playlist(s) and offer a refresh opportunity
+			RedditPlaylistEntity redditPlaylist = redditPlaylists.get(0);
+			
+			model.addAttribute("playlist", redditPlaylist);
+			Playlist playlist = SpotifyRequests.getPlaylist(user, user.getSpotifyUsername(), redditPlaylist.getPlaylistId());
+			if (playlist != null) {
+				model.addAttribute("playlistName", playlist.getName());
+			}
+			return "reddit";
+
+		} else {
+			
+			// create a new one
+			return "create-reddit-playlist";
+		}		
+	}
+	
+	@RequestMapping(value = "/create_reddit_playlist", method = RequestMethod.POST)
+	public String postCreateRedditPlaylist(
+			@RequestParam("playlistName") String playlistName,
+			@RequestParam("subreddit") String subreddit,
+			@RequestParam("period") String period,
+			@RequestParam("limit") Integer limit,
+			Model model, Principal principal) {
+		
+		String username = principal.getName();
+		
+		UserEntity user = userDao.getUserByUsername(username);
+		model.addAttribute("owner", user);
+		
+		// first identify simple issues with the params
+		// TODO: should probably handle these on the client side in the future
+		if (limit == null || limit <= 0) {
+			model.addAttribute("playlistNameError", "Limit must be a number greater than 0.");
+			return "create-reddit-playlist";
+		}
+		
+		if (subreddit == null || subreddit.isEmpty()) {
+			model.addAttribute("subredditError", "A music subreddit must be entered.");
+			return "create-reddit-playlist";
+		}
+		
+		if (period == null 
+				|| period.isEmpty() 
+				|| PostPeriod.fromString(period) == null) {
+			model.addAttribute("periodError", "A valid post period must be entered.");
+			return "create-reddit-playlist";
+		}
+		
+		PostPeriod periodObj = PostPeriod.fromString(period);
+		
+		// try creating the spotify playlist
+		Playlist playlist = SpotifyRequests.createPlaylist(user, playlistName);
+		
+		if (playlist == null) {
+			model.addAttribute("playlistNameError","Could not create playlist with name '" + playlistName +"'.");
+			return "create-reddit-playlist";
+		}
+		
+		RedditPlaylistEntity redditPlaylist = new RedditPlaylistEntity();
+		redditPlaylist.setOwner(user.getId());
+		redditPlaylist.setPlaylistId(playlist.getId());
+		redditPlaylist.setSubReddit(subreddit);
+		redditPlaylist.setPeriod(periodObj.getRequestVal());
+		redditPlaylist.setLimit(limit);
+		redditPlaylist.setLastRefresh(System.currentTimeMillis() + "");
+				
+		redditPlaylistDao.addRedditPlaylist(redditPlaylist);
+		
+		List<SimpleSong> songsNotFound = RedditRequests.updateSpotifyPlaylist(user, redditPlaylist);
+		
+		model.addAttribute("playlist", redditPlaylist);
+		model.addAttribute("success", true);
+		model.addAttribute("songsNotFound", songsNotFound);
+		
+		return "create-reddit-playlist";
+	}
+	
+	@RequestMapping(value = "/update_reddit_playlist", method = RequestMethod.POST)
+	public String postUpdatePlaylist(
+			@RequestParam("pid") Integer playlistId,
+			@RequestParam("subreddit") String subreddit,
+			@RequestParam("period") String period,
+			@RequestParam("limit") Integer limit,
+			Model model, Principal principal) {
+		
+		String username = principal.getName();
+			
+		UserEntity user = userDao.getUserByUsername(username);	
+		model.addAttribute("owner", user);
+		
+		RedditPlaylistEntity redditPlaylist = redditPlaylistDao.getRedditPlaylistById(playlistId);
+		
+		if (redditPlaylist != null) {
+			
+			if (redditPlaylist.getOwner() != user.getId()) {
+				// playlist isn't owned by the current user
+				return "redirect:/reddit";
+			}
+			
+			model.addAttribute("playlist", redditPlaylist);
+			// TODO: this should eventually be capable of modification by the user
+			Playlist playlist = SpotifyRequests.getPlaylist(user, user.getSpotifyUsername(), redditPlaylist.getPlaylistId());
+			if (playlist != null) {
+				model.addAttribute("playlistName", playlist.getName());
+			}
+			
+			// first identify simple issues with the params
+			// TODO: should probably handle these on the client side in the future
+			if (limit == null || limit <= 0) {
+				model.addAttribute("playlistNameError", "Limit must be a number greater than 0.");
+				return "reddit";
+			}
+			
+			if (subreddit == null || subreddit.isEmpty()) {
+				model.addAttribute("subredditError", "A music subreddit must be entered.");
+				return "reddit";
+			}
+			
+			if (period == null 
+					|| period.isEmpty() 
+					|| PostPeriod.fromString(period) == null) {
+				model.addAttribute("periodError", "A valid post period must be entered.");
+				return "reddit";
+			}
+			
+			PostPeriod periodObj = PostPeriod.fromString(period);
+			
+			boolean updated =  false;
+			if (!redditPlaylist.getSubReddit().equals(subreddit)) {
+				updated = true;
+				redditPlaylist.setSubReddit(subreddit);
+			}
+			if (!redditPlaylist.getPeriod().equals(periodObj.getRequestVal())) {
+				updated = true;
+				redditPlaylist.setPeriod(periodObj.getRequestVal());
+			}
+			if (!redditPlaylist.getLimit().equals(limit)) {
+				updated = true;
+				redditPlaylist.setLimit(limit);
+			}
+			
+			if (updated) {
+				redditPlaylist.setLastRefresh(System.currentTimeMillis() + "");
+				redditPlaylistDao.saveRedditPlaylist(redditPlaylist);
+			}
+			
+			List<SimpleSong> songsNotFound = RedditRequests.updateSpotifyPlaylist(user, redditPlaylist);
+			
+			model.addAttribute("success", true);
+			model.addAttribute("songsNotFound", songsNotFound);
+			
+			return "reddit";
+			
+		} else {
+			
+			// TODO: need to also have errors...
+			//model.addAttribute("error", "No playlist was found to update.");
+			
+			return "redirect:/reddit";
+		}
 	}
 	
 	@RequestMapping(value = {"/create_profile"}, method = RequestMethod.POST)

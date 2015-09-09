@@ -55,8 +55,7 @@
 				      </c:forEach>
 				    </td>
 				    <td class="track-album">${ptrack.track.album.name}</td>
-				    <fmt:formatNumber var="tsecs" value="${ptrack.track.duration / 1000}" 
-				    	maxFractionDigits="0" />
+				    <c:set var="tsecs" value="${ptrack.track.duration / 1000}" />
 				    <fmt:formatNumber var="secs" type="number"
             			pattern="00" value="${tsecs mod 60}" />
 				    <fmt:formatNumber var="mins" value="${(tsecs - secs) / 60}" 
