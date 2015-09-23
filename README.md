@@ -67,7 +67,6 @@ data in an extremely obscure way)
 - provide simple recommendation features:
 	- echonest similar artists
 	- click on a song, display information and provide echonest recommended other songs?
-	- 
 	- generate recommendations based on playlist
 		- select / deselect songs in playlist before generating
 
