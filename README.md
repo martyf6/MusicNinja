@@ -67,7 +67,6 @@ data in an extremely obscure way)
 - provide simple recommendation features:
 	- echonest similar artists
 	- click on a song, display information and provide echonest recommended other songs?
-	- 
 	- generate recommendations based on playlist
 		- select / deselect songs in playlist before generating
 
@@ -99,12 +98,15 @@ In order to get the display name, we need to make a separate User request with t
 		- pitchfork
 		- stereogum
 		- mixerbox?
+		- Rolling Stone
 		
 	generated:
 		- gnoosic (although this is based on a massive database of personal user preferences)
 		- tastekid.com (very similar to gnoosic), has an API
 		- music-map (generated via gnod)
 		- everynoise.com (uses both echonest and spotify to deliver genre radio - also has interesting links/reads at the bottom)
+
+- create models for curated playlists to aid with recommendation
 
 - conduct a 'perfectplaylist' type crowd sourcing utility for playlist generation
 
