@@ -36,9 +36,9 @@ import com.musicninja.suggest.PlaylistFilter.FilterResponse;
 
 public class EchonestRequests implements IEchonestRequests {
 	
-	private static final String API_KEY = "";
+	private static String API_KEY;
 	
-	private static EchoNestAPI EN = new EchoNestAPI(API_KEY);
+	public static EchoNestAPI EN;
 	
 	private static CloseableHttpClient httpClient = HttpClientBuilder.create().build();
 	
@@ -50,6 +50,11 @@ public class EchonestRequests implements IEchonestRequests {
 		public String toString() {
 			return super.toString().toLowerCase();
 		}
+	}
+	
+	public static void setApi(String apiKey) {
+		API_KEY = apiKey;
+		EN = new EchoNestAPI(API_KEY);
 	}
 
 	public static void getGagaHottness() throws IOException {

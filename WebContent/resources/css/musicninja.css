@@ -75,6 +75,10 @@ td.profile-owner {
 	margin-bottom: 15px;
 }
 
+.input-append .btn.dropdown-toggle {
+    float: none;
+}
+
 /*
  * Global add-ons
  */

@@ -33,15 +33,6 @@ public class RedditRequests {
 	
 	private static final String DEFAULT_SUB = "Music";
 	
-	public static void main(String[] args) {
-		List<SimpleSong> songs = getSubMusic("listentothis");
-		//List<SimpleSong> songs = getSubMusic("hiphopheads");
-		//List<SimpleSong> songs = getSubMusic("Music");
-		for (SimpleSong song : songs) {
-			System.out.println("Parsed song: " + song.getArtist() + " - " + song.getTitle());
-		}
-	}
-	
 	public static List<SimpleSong> getSubMusic(String sub) {
 		return getSubMusic(sub, DEFAULT_PERIOD, DEFAULT_LIMIT);
 	}

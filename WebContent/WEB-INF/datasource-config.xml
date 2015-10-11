@@ -14,7 +14,9 @@
         
     <!-- Configurer that replaces ${...} placeholders with values from a properties file -->
     <!-- (in this case, JDBC-related settings for the dataSource definition below) -->
-    <context:property-placeholder location="/WEB-INF/data-access.properties" system-properties-mode="OVERRIDE"/>        
+    <context:property-placeholder location="/WEB-INF/data-access.properties" 
+    	system-properties-mode="OVERRIDE"
+    	ignore-unresolvable="true" />        
 
 	<bean name="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
 	    <property name="driverClassName" value="${jdbc.driverClassName}" />

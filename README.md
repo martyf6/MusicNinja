@@ -1,35 +1,69 @@
-Not sure where to begin about this project...
+About
+====================
 
+MusicNinja aims to tackle the various challenges people face discovering new music. Our goal is to develop a number
+of utilities and services to provide users with new music to fall in love with.  MusicNinja leverages both curated
+music expertise and algorithmic 'intelligence' to identifying music that aligns to a listeners tastes.
+
+Ideas
 --------------------
+
+- pull music from various music services - both curated and generated:
+	curated: 
+		- reddit music blogs (there are tons and tons of subs for each genre imaginable)
+		- acclaimedmusic.net (most acclaimed albums and songs of all time, sorted)
+		- pitchfork
+		- stereogum
+		- mixerbox?
+		- Rolling Stone
+		
+	generated:
+		- gnoosic (although this is based on a massive database of personal user preferences)
+		- tastekid.com (very similar to gnoosic), has an API
+		- music-map (generated via gnod)
+		- everynoise.com (uses both echonest and spotify to deliver genre radio - also has interesting links/reads at the bottom)
+
+- create models for curated playlists to aid with recommendation
+
+- conduct a 'perfectplaylist' type crowd sourcing utility for playlist generation
+
+- create a spotify 'current' playlist service.  Essentially, create services that provide a dynamic spotify playlist,
+changing either daily, weekly, etc.  For instance, a spotify hiphop playlist that gets the hottest new track each day
+from reddits hiphop subthread and adds it to a playlist you have, removing the oldest one to keep the playlist size consistent
+and only containing the most recent 'hot' tracks always available in a spotify playlist of yours waiting for you.
+
 TODO
+====================
+
+The following outlines work that needs to be done on this project.
+
+Tasks
 --------------------
 
-*** TASKS:
+Profile update ticket analysis: 
+Echonest provides tickets for posts (such as adding songs to a profile), 
+we currently lack support for analyzing ticket status to see if adding songs was successful.
+Did the update succeed? What is the status of the ticket? call the GET ticket status API endpoint to check this.
 
-profile update ticket analysis 
-	- echonest provides tickets for posts (such as adding songs to a profile), 
-	we currently lack support for analyzing ticket statuses to see if adding songs was successful
-	- did the update succeed? what is the status of the ticket? call the GET ticket status API endpoint to check this
-song lookup page (ajax / json)
-	- so we can type in songs to dynamically add to a profile (or a playlist)
+Song lookup page (ajax / json):
+We want the ability to type in songs to dynamically add to a profile (or a playlist, etc.)
 
-on the playlist view page -
-show list of recommendations (via various websites that have recommendation features)
+Create and add a spotify playlist from the generated recommendations to the user's actual spotify playlists.
+Also look into the ability to add songs to the current playlist (although this should be possible from within the spotify widget)
 
-on audio summary ajax request -
-maybe show similar tracks?
-link to artist and album?
+Artist view page (we just have ajax metadata popup at the moment)
 
-artist view page (we just have ajax metadata popup atm)
+Album view page (currently no clickable album link)
 
-album view page (currently no clickable album link)
+Show a list of recommendations on the playlist view page (via various websites that have recommendation features)
 
-friends page -
-no account? send invite!
+Update/add to audio summary ajax request:
+Maybe show similar tracks? Add link to artist and album?
 
-create and add a spotify playlist from the generated recommendations to the user's actual spotify playlists
+Add a friends page and support for friends. No account? send invite!
 
-*** ENHANCEMENTS:
+Enhancements
+--------------------
 
 - user page (currently just display's spotify id)
 
@@ -70,7 +104,8 @@ data in an extremely obscure way)
 	- generate recommendations based on playlist
 		- select / deselect songs in playlist before generating
 
-*** FIXES:
+Fixes
+--------------------
 
 - better API object management for spotify requests
 	- the API object right now is shared across all requests, but needs to be synchronized
@@ -83,45 +118,22 @@ data in an extremely obscure way)
 - look into custom exception implementations
 	- if a user doesn't have spotify, but makes spotify requests
 	
-*** NOTES:
+Notes
+--------------------
 
 - spotify playlist requests return partially populated User objects (which is why only the
 user id is being displayed and not the display name... this is omitted from the response).
 In order to get the display name, we need to make a separate User request with the user id.
 	
-*** IDEAS:
 
-- pull music from various music services - both curated and generated:
-	curated: 
-		- reddit music blogs (there are tons and tons of subs for each genre imaginable)
-		- acclaimedmusic.net (most acclaimed albums and songs of all time, sorted)
-		- pitchfork
-		- stereogum
-		- mixerbox?
-		- Rolling Stone
-		
-	generated:
-		- gnoosic (although this is based on a massive database of personal user preferences)
-		- tastekid.com (very similar to gnoosic), has an API
-		- music-map (generated via gnod)
-		- everynoise.com (uses both echonest and spotify to deliver genre radio - also has interesting links/reads at the bottom)
-
-- create models for curated playlists to aid with recommendation
-
-- conduct a 'perfectplaylist' type crowd sourcing utility for playlist generation
-
-- create a spotify 'current' playlist service.  Essentially, create services that provide a dynamic spotify playlist,
-changing either daily, weekly, etc.  For instance, a spotify hiphop playlist that gets the hottest new track each day
-from reddits hiphop subthread and adds it to a playlist you have, removing the oldest one to keep the playlist size consistent
-and only containing the most recent 'hot' tracks always available in a spotify playlist of yours waiting for you.
-
-*** INSPIRATION:
+Inspiration
+--------------------
 
 http://evolver.fm/appdb/keyword/echonest/
 
-
 	
-*** REFERENCES:
+References
+--------------------
 
 jEN Javadoc: 
 http://static.echonest.com.s3.amazonaws.com/jEN/javadoc/index.html
@@ -137,6 +149,5 @@ http://static.echonest.com/labs/demo.html
 Echonest + Spotify:
 http://static.echonest.com/enspex/
 
-
-
-
+Reddit:
+https://www.reddit.com/dev/api
