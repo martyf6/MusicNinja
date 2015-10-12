@@ -29,6 +29,7 @@ import com.echonest.api.v4.Playlist;
 import com.echonest.api.v4.PlaylistParams;
 import com.echonest.api.v4.PlaylistParams.PlaylistType;
 import com.echonest.api.v4.Song;
+import com.echonest.api.v4.SongParams;
 import com.musicninja.model.ProfileEntity;
 import com.musicninja.suggest.PlaylistFilter;
 import com.musicninja.suggest.PlaylistFilter.FilterResponse;
@@ -88,41 +89,23 @@ public class EchonestRequests implements IEchonestRequests {
 		
 		System.out.println("Getting echonest track info for " + artist + " - " + title);
 		
+		SongParams params = new SongParams();
+		params.setArtist(artist);
+		params.setTitle(title);
 		try {
-			
-			// first find the artist
-			
-			URIBuilder builder = new URIBuilder("http://developer.echonest.com/api/v4/song/search")
-				.addParameter("api_key", API_KEY)
-				.addParameter("artist", artist)
-				.addParameter("title", title)
-				.addParameter("format", "json");
-            HttpGet request = new HttpGet(builder.build());
-            request.addHeader("content-type", "application/json");
-            HttpResponse result = httpClient.execute(request);
-            
-            String json = EntityUtils.toString(result.getEntity(), "UTF-8");
-            try {
-            	
-                JSONObject resp = (JSONObject) new JSONObject(json).get("response");
-                JSONObject status = (JSONObject) resp.get("status");
-                System.out.println("\t" + status.get("message"));
-                JSONArray songs = (JSONArray) resp.get("songs");
-                JSONObject song = (JSONObject) songs.get(0);
-                System.out.print("\t" + song.get("artist_name"));
-                System.out.print("(" + song.get("artist_id") + ") - ");
-                System.out.print(song.get("title"));
-                System.out.println("(" + song.get("id") + ")");
-                return song.getString("id");
-
-            } catch (JSONException e) {
-                // TODO: handle exception
-            	System.err.println("Failure. " + artist + " - " + title + ".\n" + e.getMessage());
-            }
-
-        } catch (URISyntaxException e) {
-        	// TODO: handle exception
-        }
+			List<Song> songs = EN.searchSongs(params);
+			System.out.println("\treturned " + songs.size() + " songs.");
+			for(Song song : songs) {
+				System.out.print("\t" + song.getArtistName());
+	            System.out.print("(" + song.getArtistID() + ") - ");
+	            System.out.print(song.getTitle());
+	            System.out.println("(" + song.getID() + ")");
+	            return song.getID();
+			}
+		} catch (EchoNestException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return null;
 	}
 	
