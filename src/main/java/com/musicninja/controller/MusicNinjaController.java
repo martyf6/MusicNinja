@@ -1,5 +1,9 @@
 package com.musicninja.controller;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -8,7 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.validation.Valid;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
@@ -16,7 +21,6 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,7 +33,6 @@ import com.echonest.api.v4.GeneralCatalog;
 import com.echonest.api.v4.SongCatalogItem;
 import com.musicninja.echonest.EchonestRequests;
 import com.musicninja.echonest.EchonestRequests.ProfileType;
-import com.musicninja.form.Registration;
 import com.musicninja.model.ProfileEntity;
 import com.musicninja.model.RedditPlaylistEntity;
 import com.musicninja.model.UserEntity;
@@ -39,6 +42,7 @@ import com.musicninja.persistence.IUserDao;
 import com.musicninja.reddit.PostPeriod;
 import com.musicninja.reddit.RedditRequests;
 import com.musicninja.reddit.SimpleSong;
+import com.musicninja.spotify.SpotifyManage;
 import com.musicninja.spotify.SpotifyRequests;
 import com.musicninja.suggest.PlaylistFilter;
 import com.musicninja.suggest.Preference;
@@ -186,7 +190,7 @@ public class MusicNinjaController {
 	}
 	
 	@RequestMapping(value = {"/playlist"}, method = RequestMethod.GET)
-	public String getPlaylists(
+	public String getPlaylist(
 			@RequestParam("pid") String playlistId,
 			@RequestParam("oid") String ownerId,
 			Model model, Principal principal) {
@@ -761,6 +765,61 @@ public class MusicNinjaController {
 			return "redirect:/reddit";
 		}
 	}
+	
+	@RequestMapping(value = "/backup_spotify", method = RequestMethod.POST)
+	public void postBackupSpotify(Model model, Principal principal,
+			@RequestParam(value="includeFollowed", required=false, defaultValue="false") boolean includeFollowed,
+			HttpServletResponse resp) {
+		
+		String username = principal.getName();
+		
+		UserEntity user = userDao.getUserByUsername(username);	
+		model.addAttribute("owner", user);
+		
+		File backup = SpotifyManage.backupPlaylists(user, includeFollowed);
+		
+		resp.setContentType("application/zip");
+		resp.setHeader("Content-Disposition",
+				"attachment;filename=SpotifyBackup.zip");
+		
+		try {
+			
+			FileInputStream backupIn = new FileInputStream(backup);
+			ServletOutputStream out = resp.getOutputStream();
+
+			// copy content to output stream
+			byte[] buffer = new byte[4096];
+			
+			int len;
+			while((len = backupIn.read(buffer)) > 0) {
+				out.write(buffer, 0, len);
+			}
+
+			backupIn.close();
+			out.flush();
+			out.close();
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	@RequestMapping(value = "/backup_spotify", method = RequestMethod.GET)
+	public String getBackupSpotify(Model model, Principal principal) {
+		
+		String username = principal.getName();
+		
+		UserEntity user = userDao.getUserByUsername(username);	
+		model.addAttribute("owner", user);
+		
+		//SpotifyManage.backupPlaylists(user, false);
+		return "backup-spotify";
+	}
+	
 	
 	/**
 	 * Creates a JSONObject response with success and message attributes
