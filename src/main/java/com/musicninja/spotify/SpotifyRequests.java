@@ -29,15 +29,21 @@ import com.wrapper.spotify.models.User;
 
 public class SpotifyRequests {
 	
-	private static String CLIENT_ID = "";
-	private static String CLIENT_SECRET_ID = "";
+	private static String CLIENT_ID;
+	private static String CLIENT_SECRET_ID;
 	private static String REDIRECT_URI = "http://localhost:8080/MusicNinja/spotifyauthdone";
 	
-	public static final Api API = Api.builder()
-			  .clientId(CLIENT_ID)
-			  .clientSecret(CLIENT_SECRET_ID)
-			  .redirectURI(REDIRECT_URI)
-			  .build();
+	public static Api API;
+	
+	public static void setApi(String clientId, String clientSecretId) {
+		CLIENT_ID = clientId;
+		CLIENT_SECRET_ID = clientSecretId;
+		API = Api.builder()
+				  .clientId(CLIENT_ID)
+				  .clientSecret(CLIENT_SECRET_ID)
+				  .redirectURI(REDIRECT_URI)
+				  .build();
+	}
 	
 	public static String getAuthURL() {
 

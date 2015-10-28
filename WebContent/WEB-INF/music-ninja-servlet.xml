@@ -33,4 +33,31 @@
         <property name="basename" value="/WEB-INF/messages" />
         <property name="defaultEncoding" value="UTF-8" />
     </bean>	
+    
+    <!-- 
+    Read service Api keys from 'profile.properties' file 
+    and call setter functions for service classes.
+     -->
+    <context:property-placeholder location="classpath:profile.properties" 
+    	system-properties-mode="OVERRIDE"
+    	ignore-unresolvable="true" />
+    
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+	    <property name="staticMethod" value="com.musicninja.spotify.SpotifyRequests.setApi"/>
+	    <property name="arguments">
+	        <list>
+	            <value>${spotify.clientId}</value>
+	            <value>${spotify.clientSecretId}</value>
+	        </list>
+	   </property>
+	</bean>
+	
+	<bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+	    <property name="staticMethod" value="com.musicninja.echonest.EchonestRequests.setApi"/>
+	    <property name="arguments">
+	        <list>
+	            <value>${echonest.apiKey}</value>
+	        </list>
+	   </property>
+	</bean>
 </beans>

@@ -12,26 +12,34 @@
 <link href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" rel="stylesheet" />
 <!-- MusicNinja -->
 <link rel="stylesheet" href="<c:url value="/resources/css/musicninja.css" />" type="text/css" />
-<title>Reddit Music</title>
+<title>Spotify Backup</title>
 </head>
 <body>
 	<jsp:include page="/WEB-INF/views/templates/navbar.jsp"/>
 	
 	<div class="container">
-		<h1><span>My Reddit+Spotify</span></h1>
-		<h3>Playlists <small>(${fn:length(redditPlaylists)} total)</small></h3>
-	
-		<c:choose>
-			<c:when test="${not empty redditPlaylists}">
-				<!-- reddit playlists: -->
-				<jsp:include page="/WEB-INF/views/templates/reddit_playlists_table.jsp"/>
-				<p><a href="create_reddit_playlist">Create a new one.</a></p>
-		    </c:when>
-			<c:otherwise>
-				<p>You have no Reddit playlists.<a href="create_reddit_playlist">Create one!</a></p>
-		    </c:otherwise>
-		</c:choose>
-			
+		
+		<h1>Spotify Backup</h1>
+		
+		<div>
+			You can backup all your spotify playlists with the click of a button!
+			<br/>
+			Choose whether or not you want playlists you follow to be backed up as well.
+		</div>
+		
+		<br/>
+		
+		<div>
+			<form action="backup_spotify" method="post">
+				<div class="checkbox">
+			    	<label>
+			      		<input name="includeFollowed" type="checkbox"> Include followed playlists
+			    	</label>
+			  	</div>
+			  	<button type="submit" class="btn btn-default btn-grn" id="spotifyBackupBtn">Back 'em Up!</button>
+			</form>
+		</div>
+		
 	</div>
 	
 	<!-- jQuery -->

@@ -65,8 +65,16 @@ public class SimpleSong {
 		// some subs also do: [optional flair] artist - song title (comments)
 		
 		try {
-			String separatorStr = "--";
+			String separatorStr = "- -";
 			int separator = songStr.indexOf(separatorStr);
+			if (separator <= 0) {
+				separatorStr = "--";
+				separator = songStr.indexOf(separatorStr);
+			}
+			if (separator <= 0) {
+				separatorStr = " - ";
+				separator = songStr.indexOf(separatorStr);
+			}
 			if (separator <= 0) {
 				separatorStr = "-";
 				separator = songStr.indexOf(separatorStr);
@@ -115,6 +123,9 @@ public class SimpleSong {
 				}
 				title = title.trim();
 			}
+			
+			// TODO: cut out additional Feat. Feat feat. feat Ft. ft. Ft ft
+			// parse them surrounded by spaces
 			
 			return new SimpleSong(artist, title, genre, titleComment);
 		} catch (IndexOutOfBoundsException e) {
