@@ -781,10 +781,34 @@ public class MusicNinjaController {
 		resp.setContentType("application/zip");
 		resp.setHeader("Content-Disposition",
 				"attachment;filename=SpotifyBackup.zip");
+		// While this is not required, it should probably be set
+		//resp.setContentLength((int) backup.length());
+		
+		fileDownloadResponse(backup, resp);
+	}
+	
+	@RequestMapping(value = "/backup_spotify", method = RequestMethod.GET)
+	public String getBackupSpotify(Model model, Principal principal) {
+		
+		String username = principal.getName();
+		
+		UserEntity user = userDao.getUserByUsername(username);	
+		model.addAttribute("owner", user);
+		
+		return "backup-spotify";
+	}
+	
+	/**
+	 * Attach a file to a response for a user to download
+	 * @param file
+	 * @param resp
+	 */
+	// TODO: need better exception handling
+	private static void fileDownloadResponse(File file, HttpServletResponse resp) {
 		
 		try {
 			
-			FileInputStream backupIn = new FileInputStream(backup);
+			FileInputStream backupIn = new FileInputStream(file);
 			ServletOutputStream out = resp.getOutputStream();
 
 			// copy content to output stream
@@ -806,18 +830,6 @@ public class MusicNinjaController {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-	
-	@RequestMapping(value = "/backup_spotify", method = RequestMethod.GET)
-	public String getBackupSpotify(Model model, Principal principal) {
-		
-		String username = principal.getName();
-		
-		UserEntity user = userDao.getUserByUsername(username);	
-		model.addAttribute("owner", user);
-		
-		//SpotifyManage.backupPlaylists(user, false);
-		return "backup-spotify";
 	}
 	
 	
