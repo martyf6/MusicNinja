@@ -9,15 +9,16 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.persistence.CascadeType;
 import javax.persistence.OneToMany;
+
+import java.util.HashSet;
+
+import javax.persistence.FetchType;
 
 
 @Entity
 @Table(name = "TOPLIST")
 public class TopListEntity {
-	
-	private Set<TopListEntryEntity> entries; 
 	
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -32,16 +33,6 @@ public class TopListEntity {
 	
 	@Column(name = "TYPE", nullable = false)
 	private String type;
-	
-	@OneToMany(cascade=CascadeType.ALL, mappedBy="topListEntry")
-	public Set<TopListEntryEntity> getEntries()
-	{
-		return entries;
-	}
-	public void setEntries(Set<TopListEntryEntity> entries)
-	{
-		this.entries = entries;
-	}
 	
     public int getId() {
     	return id;

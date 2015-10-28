@@ -8,7 +8,7 @@ public interface IMusicObjectDao {
 
 	public void addMusicObject(MusicObjectEntity musicObjectEntity);
 	
-	public MusicObjectEntity getTopListById(int id);
+	public MusicObjectEntity getMusicObjectById(int id);
 	
 	public Collection<MusicObjectEntity> getMusicObjectsByType(String type);
 	

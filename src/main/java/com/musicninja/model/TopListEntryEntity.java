@@ -8,21 +8,26 @@ import static javax.persistence.GenerationType.IDENTITY;
 
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.persistence.CascadeType;
 import javax.persistence.ManyToOne;
+import javax.persistence.JoinColumn;
+import javax.persistence.FetchType;
 
 @Entity
 @Table(name = "TOPLISTENTRY")
 public class TopListEntryEntity {
 	
-	private TopListEntity topList;
-	private MusicObjectEntity musicObject;
-
 	@Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "ID", unique = true, nullable = false)
     private Integer id;
-	
+	public Integer getId() {
+		return this.id;
+	}
+
+	public void setId(Integer id) {
+		this.id =id;
+	}
+
 	@Column(name = "RANK")
 	private Integer rank;
 	
@@ -33,19 +38,24 @@ public class TopListEntryEntity {
         this.rank = rank;
     }
 	
-	@ManyToOne(cascade=CascadeType.ALL)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name="ListID", nullable = false)
+	private TopListEntity topList;
 	public TopListEntity getTopList()
 	{
-		return topList;
+		return this.topList;
 	}
 	public void setTopList(TopListEntity topList)
 	{
 		this.topList = topList;
 	}
 	
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name="MusicObjectID", nullable = false)
+	private MusicObjectEntity musicObject;
 	public MusicObjectEntity getMusicObject()
 	{
-		return musicObject;
+		return this.musicObject;
 	}
 	public void setMusicObject(MusicObjectEntity musicObject)
 	{

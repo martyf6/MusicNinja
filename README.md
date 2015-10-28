@@ -107,6 +107,10 @@ In order to get the display name, we need to make a separate User request with t
 		- everynoise.com (uses both echonest and spotify to deliver genre radio - also has interesting links/reads at the bottom)
 
 - create models for curated playlists to aid with recommendation
+	- Example:
+		- A user wants to create a playlist based on 'Under the Bridge' (UtB) by RHCP using curated playlists as its engine and filtering for similar year and genre.
+		- UtB is on the Rolling Stone Greatest Rock Songs of the 90s at number 10.
+		- On that same list, there are 10 songs which also came out in 1991 and are rock songs. The recommender has those songs, as well as other songs from those albums to choose from.
 
 - conduct a 'perfectplaylist' type crowd sourcing utility for playlist generation
 
