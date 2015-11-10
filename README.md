@@ -62,6 +62,8 @@ Maybe show similar tracks? Add link to artist and album?
 
 Add a friends page and support for friends. No account? send invite!
 
+Loading image for long running processes like backup playlists
+
 Enhancements 
 --------------------
 

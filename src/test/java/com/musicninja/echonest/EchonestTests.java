@@ -104,12 +104,12 @@ public class EchonestTests {
 	public static void testArtistSummary(String artistId, String[][] artistTestData) {
 		System.out.println("Testing Echonest artist summary for artist '" + artistId + "'.");
 		
-		Map<String,String> artistSummary = EchonestRequests.getArtistSummary("spotify:artist:" + artistId);
+		Map<String,Object> artistSummary = EchonestRequests.getArtistSummary("spotify:artist:" + artistId);
 		
 		for (String[] data : artistTestData) {
 			
 			if (artistSummary.containsKey(data[0])) {
-				String summaryData = artistSummary.get(data[0]);
+				String summaryData = artistSummary.get(data[0]).toString();
 				if (data[0].equals("songs") || data[0].equals("genres")) {
 					if (summaryData.contains(data[1])) {
 						System.out.println("PASS.");

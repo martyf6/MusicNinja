@@ -9,3 +9,6 @@ properties.txt
 
 #Other
 /target/
+
+#API Properties
+**/profile.properties

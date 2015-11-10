@@ -6,6 +6,7 @@
         	<span aria-hidden="true">&times;</span>
         </button>
         <h4 class="modal-title" id="artistInfoLabel">Artist Data</h4>
+        <h4><a id="artistUrl" href="#">Artist Page</a></h4>
       </div>
       <div class="modal-body" id="artistInfoBody">
         <p>Loading...</p>

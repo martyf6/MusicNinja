@@ -1,5 +1,6 @@
 var trackInfoBody = $('#trackInfoModal #trackInfoBody');
 var artistInfoBody = $('#artistInfoModal #artistInfoBody');
+var artistURL = $('#artistInfoModal #artistURL');
 
 function displayTrackInfo(trackId) {
     
@@ -33,7 +34,7 @@ function displayTrackInfo(trackId) {
     });
 }
 
-function displayArtistInfo(artistId) {
+ function displayArtistInfo(artistId) {
     
     artistInfoBody.html('<p>Loading...</p>');
     $('#artistInfoModal').modal('show');
@@ -46,6 +47,10 @@ function displayArtistInfo(artistId) {
 	    aid : artistId
 	}
     });
+    
+    artist_url = "/music-ninja/artist?aid=";
+    artist_url = artist_url.concat(artistId);
+    artistUrl.href=artist_url;
     
     request.done(function(resp) {
 	var respJson = JSON.parse(resp);

@@ -299,7 +299,7 @@ public class EchonestRequests implements IEchonestRequests {
 		return false;
 	}
 	
-	public static Map<String,String> getArtistSummary(String artistId) {
+	public static Map<String,Object> getArtistSummary(String artistId) {
 		
 		System.out.println("Getting artist summary for artist " + artistId);
 		
@@ -315,6 +315,7 @@ public class EchonestRequests implements IEchonestRequests {
 				.addParameter("id", artistId)
 				.addParameter("bucket", "songs")
 				.addParameter("bucket", "genre")
+				.addParameter("bucket", "biographies")
 				.addParameter("format", "json");
 			
 			for (String bucket : buckets)
@@ -324,6 +325,7 @@ public class EchonestRequests implements IEchonestRequests {
 				builder.addParameter("bucket", bucket);
 			
             HttpGet request = new HttpGet(builder.build());
+            System.out.println(request);
             request.addHeader("content-type", "application/json");
             HttpResponse result = httpClient.execute(request);
             
@@ -344,10 +346,32 @@ public class EchonestRequests implements IEchonestRequests {
                 JSONArray genres = (JSONArray) artist.get("genres");
                 System.out.println("\t" + genres.toString());
                 
-                Map<String,String> artistSummary = new HashMap<String,String>();
+                List<String> genre_list = new ArrayList<String>();
+                for (int i = 0; i < genres.length(); i++) {
+                    genre_list.add(genres.getJSONObject(i).getString("name"));
+                }
+                
+                JSONArray bios = (JSONArray) artist.get("biographies");
+                
+                
+                Map<String,Object> artistSummary = new HashMap<String,Object>();
                 artistSummary.put("name", name);
                 artistSummary.put("songs", songs.toString());
-                artistSummary.put("genres", genres.toString());
+                artistSummary.put("genres", genre_list);
+                
+                // Filter for last.fm biography
+                for (int i = 0; i < bios.length(); i++) {
+                    JSONObject bio = bios.getJSONObject(i);
+
+                    if ((bio.getString("site")).equals("last.fm")) {
+
+                        String lastfm_bio = bio.get("text").toString();
+                        System.out.println("\t" + lastfm_bio);
+                        artistSummary.put("lastfm_bio", lastfm_bio.toString());
+                    }
+
+                }
+                
                 
                 for (String bucket : buckets) {
                 	String bucketVal = artist.get(bucket).toString();
@@ -402,6 +426,7 @@ public class EchonestRequests implements IEchonestRequests {
 				builder.addParameter("bucket", bucket);
 			
             HttpGet request = new HttpGet(builder.build());
+            System.out.println(request);
             request.addHeader("content-type", "application/json");
             HttpResponse result = httpClient.execute(request);
             

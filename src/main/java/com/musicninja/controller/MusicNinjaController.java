@@ -229,10 +229,11 @@ public class MusicNinjaController {
 		UserEntity user = userDao.getUserByUsername(username);
 		
 		// TODO: get artist bio, top songs, profile, news, etc.
-		Map<String,String> artistSummary = EchonestRequests.getArtistSummary("spotify:artist:" + artistId);
+		Map<String,Object> artistSummary = EchonestRequests.getArtistSummary("spotify:artist:" + artistId);
+		Map<String,String> artistSpotifySummary = SpotifyRequests.getArtistSummary(artistId);
 		
 		// currently delivers:
-		// familiarity (double), hotttnesss (double), songs (list of strs), genres (list of obj w/ 'name' attr), 
+		// familiarity (double), hotttnesss (double), genres (list of obj w/ 'name' attr), 
 		// discovery (double), facebook (str id), name (str)
 		
 		// TODO: better integrate with echonest and spotify top tracks
@@ -246,13 +247,18 @@ public class MusicNinjaController {
 			for (Track t : topTracks) {
 				topTracksAr.put(t.getName());
 			}
-			artistSummary.put("songs", topTracksAr.toString());
+			// artistSummary.put("songs", topTracksAr.toString());
 		}
 		
 		JSONObject artistSummaryObj = new JSONObject();
 		
 		String summary = "";
-		for(Entry<String, String> entry : artistSummary.entrySet()) {
+		for(Entry<String, Object> entry : artistSummary.entrySet()) {
+			//audioSummaryObj.put(entry.getKey(), entry.getValue());
+			summary += entry.getKey() + ": " + entry.getValue() + "<br/>";
+		}
+		
+		for(Entry<String, String> entry : artistSpotifySummary.entrySet()) {
 			//audioSummaryObj.put(entry.getKey(), entry.getValue());
 			summary += entry.getKey() + ": " + entry.getValue() + "<br/>";
 		}
@@ -262,6 +268,94 @@ public class MusicNinjaController {
 		createJsonResponse(true, "", artistSummaryObj);
 		
 		return artistSummaryObj.toString();
+	}
+	
+	@RequestMapping(value = {"/artist"}, method = RequestMethod.GET)
+	public String getArtistPage(
+			@RequestParam("aid") String artistId,
+			Model model, Principal principal) {
+		
+		// get the active user
+		String username = principal.getName();
+		model.addAttribute("username", username);
+		
+		UserEntity user = userDao.getUserByUsername(username);
+		
+		// TODO: get artist bio, top songs, profile, news, etc.
+		Map<String,Object> artistEchoSummary = EchonestRequests.getArtistSummary("spotify:artist:" + artistId);
+		Map<String,String> artistSpotifySummary = SpotifyRequests.getArtistSummary(artistId);
+	
+		// currently delivers:
+		// familiarity (double), hotttnesss (double), songs (list of strs), genres (list of obj w/ 'name' attr), 
+		// discovery (double), facebook (str id), name (str)
+		// track_ids (string), tracks (list map), lastfm_bio (string), image_url (string), followers (string), popularity (string)
+
+		// TODO: this also doesn't include spotify's ranking of popularity
+		if (artistEchoSummary.containsKey("songs")) {
+			
+			List<Track> topTracks = SpotifyRequests.getArtistTopSongs(artistId);
+			// trackSummaries contains information for each top song from EchoNest
+			List<Object> trackSummaries = new ArrayList<Object>();
+			
+			JSONArray topTracksAr = new JSONArray();
+			for (Track t : topTracks) {
+				topTracksAr.put(t.getId());
+			}
+			
+            for (int i = 0; i < topTracksAr.length(); i++) {
+                String trackId = topTracksAr.getString(i);
+                
+            	Map<String,String> audioSummary = EchonestRequests.getAudioSummary("spotify:track:" + trackId);
+                trackSummaries.add(audioSummary);
+            }	
+            
+			
+			model.addAttribute("tracks", topTracks);
+			// trackSummaries not currently being used in view
+			model.addAttribute("trackSummaries", trackSummaries);
+		}
+		
+		// TODO: get top albums from spotify: By popularity and release date. Need to create SpotifyRequests.getArtistsAlbums
+					// Not sure API can filter on 'market', or else we will get duplicates.
+					// Need to do another search on each album to get popularity and release info	
+		// TODO: go through features programmatically
+		// TODO: return albums, top tracks, genres, and images as objects
+		// info: familiarity, hotttnesss, discovery, facebook, name, lastfm_bio, followers, popularity
+		// genres: objects with 'name' attr
+		// songs: objects with 'name' and 'id' attr
+		// images: objects with 'size' and 'url' attr
+		
+		String discovery = artistEchoSummary.get("discovery").toString();
+		String familiarity = artistEchoSummary.get("familiarity").toString();
+		String hotttnesss = artistEchoSummary.get("hotttnesss").toString();
+		//String twitter = artistEchoSummary.get("id:twitter").toString();
+		//String facebook = artistEchoSummary.get("id:facebook").toString();
+		String name = artistEchoSummary.get("name").toString();
+		Object genres = artistEchoSummary.get("genres");
+		String lastfm_bio = artistEchoSummary.get("lastfm_bio").toString();
+		String followers = artistSpotifySummary.get("followers").toString();
+		String popularity = artistSpotifySummary.get("popularity").toString();
+		String image_url = artistSpotifySummary.get("image_url").toString();
+		
+		Map<String,Object> artistInfo = new HashMap<String,Object>();
+		artistInfo.put("discovery", discovery);
+		artistInfo.put("familiarity", familiarity);
+		artistInfo.put("hotttnesss", hotttnesss);
+		//artistInfo.put("twitter", twitter);
+		//artistInfo.put("facebook", facebook);
+		artistInfo.put("name", name);
+		artistInfo.put("genres", genres);
+		artistInfo.put("lastfm_bio", lastfm_bio);
+        artistInfo.put("followers", followers);
+        artistInfo.put("popularity", popularity);
+        artistInfo.put("image_url", image_url);
+        
+		model.addAttribute("aid", artistId);
+		model.addAttribute("info", artistInfo);
+		
+		return "view-artist";
+		
+
 	}
 	
 	@RequestMapping(value = {"/track_summary"}, method = RequestMethod.GET)

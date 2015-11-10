@@ -1,27 +1,45 @@
 package com.musicninja.spotify;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.musicninja.model.UserEntity;
 import com.wrapper.spotify.Api;
 import com.wrapper.spotify.exceptions.WebApiException;
 import com.wrapper.spotify.methods.AddTrackToPlaylistRequest;
+import com.wrapper.spotify.methods.AlbumsForArtistRequest;
+import com.wrapper.spotify.methods.ArtistRequest;
 import com.wrapper.spotify.methods.CurrentUserRequest;
 import com.wrapper.spotify.methods.PlaylistCreationRequest;
 import com.wrapper.spotify.methods.PlaylistRequest;
 import com.wrapper.spotify.methods.PlaylistTracksRequest;
 import com.wrapper.spotify.methods.TopTracksRequest;
+import com.wrapper.spotify.methods.TracksRequest;
 import com.wrapper.spotify.methods.TrackSearchRequest;
 import com.wrapper.spotify.methods.UserPlaylistsRequest;
 import com.wrapper.spotify.methods.UserRequest;
+import com.wrapper.spotify.models.Artist;
+import com.wrapper.spotify.models.Album;
+import com.wrapper.spotify.models.Image;
 import com.wrapper.spotify.models.Page;
 import com.wrapper.spotify.models.Playlist;
 import com.wrapper.spotify.models.PlaylistTrack;
 import com.wrapper.spotify.models.SimpleArtist;
+import com.wrapper.spotify.models.SimpleAlbum;
 import com.wrapper.spotify.models.SimplePlaylist;
 import com.wrapper.spotify.models.SnapshotResult;
 import com.wrapper.spotify.models.Track;
@@ -372,5 +390,47 @@ public class SpotifyRequests {
 			System.err.println(e.getCause());
 		}
 		return false;
+	}
+	
+	public static Map<String,String> getArtistSummary(String artistId) {
+		
+		System.out.println("Getting Spotify artist summary for artist " + artistId);
+		
+		final ArtistRequest request = API.getArtist(artistId)
+				.build();
+		
+		try {
+			
+			final Artist artist = request.get();
+			
+			System.out.println("Spotify artist summary for: " + artist.getName());
+			
+			System.out.println(artist);
+			
+			String name = artist.getName();
+			String followers = Integer.toString(artist.getFollowers().getTotal());
+			String popularity = Integer.toString(artist.getPopularity());
+			List<Image> images = artist.getImages();
+			String image_url = images.get(0).getUrl();
+			
+			Map<String,String> artistSummary = new HashMap<String,String>();
+			
+			artistSummary.put("name", name);
+            artistSummary.put("followers", followers);
+            artistSummary.put("popularity", popularity);
+            artistSummary.put("image_url", image_url);
+			
+			
+			return artistSummary;
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (WebApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 }
