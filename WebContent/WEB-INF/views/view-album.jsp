@@ -12,7 +12,7 @@
 <link href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" rel="stylesheet" />
 <!-- MusicNinja -->
 <link rel="stylesheet" href="<c:url value="/resources/css/musicninja.css" />" type="text/css" />
-<title>View Artist</title>
+<title>View Album</title>
 </head>
 <body>
 	<jsp:include page="/WEB-INF/views/templates/navbar.jsp"/>
@@ -20,67 +20,56 @@
 	<div class="container">
 	
 		<div class="page-header">
-			<!-- artist name -->
+			<!-- album name -->
 			<h1>${info.name} <small>with ID = ${aid}</small></h1>
 		</div>
 		
 	</div>
 	
-	<!-- artist information: -->
+	<!-- album information: -->
 	<div class="row">
-		
+		<!-- image: -->
 		<div class="col-xs-4 col-xs-offset-2">
-			<!-- play top songs: -->
 			<c:forEach items="${tracks}" var="currentTrack" varStatus="stat">
 			  <c:set var="tracksString" value="${tracksString},${currentTrack.id}" />
 			</c:forEach>
-			<iframe src="https://embed.spotify.com/?uri=spotify:trackset:Top_Songs:${tracksString}" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
-			<br>
-			<!-- artist info: -->
-			<table class="table table-responsive table-condensed">
-				<tbody>
-				  <tr>
-				    <td>Discovery</td>
-				    <td>${info.discovery}</td>
-				  </tr>
-				  <tr>
-				    <td>Familiarity</td>
-				    <td>${info.familiarity}</td>
-				  </tr>
-				  <tr>
-				    <td>Hotttnesss</td>
-				    <td>${info.hotttnesss}</td>
-				  </tr>
-				  <c:forEach items="${info.genres}" var="pgenre">
-				  <tr>
-				    <td>Genres</td>
-				    <td>${pgenre}</td>
-				  </tr>
-				  </c:forEach>
-				  <tr>
-				    <td>Followers</td>
-				    <td>${info.followers}</td>
-				  </tr>
-				  <tr>
-				    <td>Popularity</td>
-				    <td>${info.popularity}</td>
-				  </tr>
-				</tbody>
-			</table>
-			
-			
+			<iframe src="https://embed.spotify.com/?uri=spotify:trackset:${info.name}:${tracksString}" width="300" height="380" frameborder="0" allowtransparency="true"></iframe>
 		</div>
 		<!-- info: -->
-		<div class="col-xs-4">
-			<!-- image: -->
-			<div class="artist-image">
-				<img style="width:50%; display:block; margin:0 auto;" src="${info.image_url}">
-			</div>
-			<br>
-			<!-- lastfm bio: -->
-			<div class="artist-bio">
-				${info.lastfm_bio}
-			</div>
+		<div class="col-xs-5">
+			<table class="table table-responsive table-striped table-condensed" id="playlistTracks">
+				<thead>
+					<tr>
+						<th>SONG</th>
+						<th>ARTIST</th>
+						<th>ALBUM</th>
+						<th><span class="glyphicon glyphicon-time" aria-hidden="true"></span></th>
+					</tr>
+				</thead>
+				<tbody>
+					<c:forEach items="${tracks}" var="atrack">
+					  <tr>
+					    <td class="track-name" data-track-id="${atrack.id}">
+					    	<a href="#">${atrack.name}</a>
+					    </td>
+					    <td class="track-artist">
+					      <c:forEach items="${atrack.artists}" var="artist" varStatus="loop">
+					        <a href="#" data-artist-id="${artist.id}">${artist.name}</a><c:if test="${!loop.last}">, </c:if>
+					      </c:forEach>
+					    </td>
+					    <td class="track-album">
+					    	<a href="/music-ninja/album?aid=${aid}">${info.name}</a>
+					    </td>
+					    <c:set var="tsecs" value="${atrack.duration / 1000}" />
+					    <fmt:formatNumber var="secs" type="number"
+		           			pattern="00" value="${tsecs mod 60}" />
+					    <fmt:formatNumber var="mins" value="${(tsecs - secs) / 60}" 
+					    	maxFractionDigits="0" />
+					    <td>${mins}:${secs}</td>
+					  </tr>
+					</c:forEach>
+				</tbody>
+			</table>
 		</div>
 	</div>
 	

@@ -47,9 +47,11 @@ import com.musicninja.spotify.SpotifyRequests;
 import com.musicninja.suggest.PlaylistFilter;
 import com.musicninja.suggest.Preference;
 import com.musicninja.suggest.Preference.Distribution;
+import com.wrapper.spotify.models.Page;
 import com.wrapper.spotify.models.Playlist;
 import com.wrapper.spotify.models.PlaylistTrack;
 import com.wrapper.spotify.models.SimplePlaylist;
+import com.wrapper.spotify.models.SimpleTrack;
 import com.wrapper.spotify.models.Track;
 import com.wrapper.spotify.models.User;
 
@@ -321,7 +323,7 @@ public class MusicNinjaController {
 		// TODO: go through features programmatically
 		// TODO: return albums, top tracks, genres, and images as objects
 		// info: familiarity, hotttnesss, discovery, facebook, name, lastfm_bio, followers, popularity
-		// genres: objects with 'name' attr
+		// genres: objects with 'name' attr (currently from echo, could be from spotify)
 		// songs: objects with 'name' and 'id' attr
 		// images: objects with 'size' and 'url' attr
 		
@@ -354,8 +356,80 @@ public class MusicNinjaController {
 		model.addAttribute("info", artistInfo);
 		
 		return "view-artist";
+	}
+	
+	@RequestMapping(value = {"/album"}, method = RequestMethod.GET)
+	public String getAlbumPage(
+			@RequestParam("aid") String albumId,
+			Model model, Principal principal) {
 		
+		// get the active user
+		String username = principal.getName();
+		model.addAttribute("username", username);
+		
+		UserEntity user = userDao.getUserByUsername(username);
+		
+		// TODO: get Spotify data for album, which includes all tracks
+		// TODO: get Echo data for tracks
+		Map<String,Object> albumSpotifySummary = SpotifyRequests.getAlbumSummary(albumId);
+		
+		// currently delivers:
+		// familiarity (double), hotttnesss (double), songs (list of strs), genres (list of obj w/ 'name' attr), 
+		// discovery (double), facebook (str id), name (str)
+		// track_ids (string), tracks (list map), lastfm_bio (string), image_url (string), followers (string), popularity (string)
 
+		// TODO: get Echonest data for all songs
+		if (albumSpotifySummary.containsKey("tracks")) {
+			
+			Object albumTracks = albumSpotifySummary.get("tracks");
+			List<SimpleTrack> tracks = (List<SimpleTrack>)albumTracks;
+
+			// trackSummaries contains information for each top song from EchoNest
+			List<Object> trackSummaries = new ArrayList<Object>();
+			
+			JSONArray albumTracksAr = new JSONArray();
+			for (SimpleTrack t : tracks) {
+				albumTracksAr.put(t.getId());
+			}
+			
+            //for (int i = 0; i < albumTracksAr.length(); i++) {
+                //String trackId = albumTracksAr.getString(i);
+                
+            	// Map<String,String> audioSummary = EchonestRequests.getAudioSummary("spotify:track:" + trackId);
+                // trackSummaries.add(audioSummary);
+            //}	
+            
+			
+			model.addAttribute("tracks", tracks);
+			// trackSummaries not currently being used in view
+			// model.addAttribute("trackSummaries", trackSummaries);
+		}
+		
+		// TODO: get top albums from spotify: By popularity and release date. Need to create SpotifyRequests.getArtistsAlbums
+					// Not sure API can filter on 'market', or else we will get duplicates.
+					// Need to do another search on each album to get popularity and release info	
+		// TODO: go through features programmatically
+		// TODO: return albums, top tracks, genres, and images as objects
+		// info: familiarity, hotttnesss, discovery, facebook, name, lastfm_bio, followers, popularity
+		// genres: objects with 'name' attr
+		// songs: objects with 'name' and 'id' attr
+		// images: objects with 'size' and 'url' attr
+		
+		String name = albumSpotifySummary.get("name").toString();
+		String popularity = albumSpotifySummary.get("popularity").toString();
+		String image_url = albumSpotifySummary.get("image_url").toString();
+		Object genres = albumSpotifySummary.get("genres");
+		
+		Map<String,Object> albumInfo = new HashMap<String,Object>();
+		albumInfo.put("name", name);
+		albumInfo.put("popularity", popularity);
+		albumInfo.put("image_url", image_url);
+		albumInfo.put("genres", genres);
+        
+		model.addAttribute("aid", albumId);
+		model.addAttribute("info", albumInfo);
+		
+		return "view-album";
 	}
 	
 	@RequestMapping(value = {"/track_summary"}, method = RequestMethod.GET)

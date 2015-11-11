@@ -54,7 +54,9 @@
 				        <a href="#" data-artist-id="${artist.id}">${artist.name}</a><c:if test="${!loop.last}">, </c:if>
 				      </c:forEach>
 				    </td>
-				    <td class="track-album">${ptrack.track.album.name}</td>
+				    <td class="track-album">
+				    	<a href="/music-ninja/album?aid=${ptrack.track.album.id}">${ptrack.track.album.name}</a>
+				    </td>
 				    <c:set var="tsecs" value="${ptrack.track.duration / 1000}" />
 				    <fmt:formatNumber var="secs" type="number"
             			pattern="00" value="${tsecs mod 60}" />

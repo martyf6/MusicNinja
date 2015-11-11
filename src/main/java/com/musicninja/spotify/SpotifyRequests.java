@@ -21,6 +21,7 @@ import com.musicninja.model.UserEntity;
 import com.wrapper.spotify.Api;
 import com.wrapper.spotify.exceptions.WebApiException;
 import com.wrapper.spotify.methods.AddTrackToPlaylistRequest;
+import com.wrapper.spotify.methods.AlbumRequest;
 import com.wrapper.spotify.methods.AlbumsForArtistRequest;
 import com.wrapper.spotify.methods.ArtistRequest;
 import com.wrapper.spotify.methods.CurrentUserRequest;
@@ -41,6 +42,7 @@ import com.wrapper.spotify.models.PlaylistTrack;
 import com.wrapper.spotify.models.SimpleArtist;
 import com.wrapper.spotify.models.SimpleAlbum;
 import com.wrapper.spotify.models.SimplePlaylist;
+import com.wrapper.spotify.models.SimpleTrack;
 import com.wrapper.spotify.models.SnapshotResult;
 import com.wrapper.spotify.models.Track;
 import com.wrapper.spotify.models.User;
@@ -49,7 +51,7 @@ public class SpotifyRequests {
 	
 	private static String CLIENT_ID;
 	private static String CLIENT_SECRET_ID;
-	private static String REDIRECT_URI = "http://localhost:8080/MusicNinja/spotifyauthdone";
+	private static String REDIRECT_URI = "http://localhost:8080/music-ninja/spotifyauthdone";
 	
 	public static Api API;
 	
@@ -405,8 +407,6 @@ public class SpotifyRequests {
 			
 			System.out.println("Spotify artist summary for: " + artist.getName());
 			
-			System.out.println(artist);
-			
 			String name = artist.getName();
 			String followers = Integer.toString(artist.getFollowers().getTotal());
 			String popularity = Integer.toString(artist.getPopularity());
@@ -422,6 +422,56 @@ public class SpotifyRequests {
 			
 			
 			return artistSummary;
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (WebApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+	
+	public static Map<String,Object> getAlbumSummary(String albumId) {
+		
+		System.out.println("Getting Spotify album summary for album " + albumId);
+		
+		final AlbumRequest request = API.getAlbum(albumId)
+				.build();
+		
+		try {
+			
+			final Album album = request.get();
+			
+			System.out.println("Spotify album summary for: " + album.getName());
+			
+			String name = album.getName();
+			List<SimpleArtist> artists = album.getArtists();
+			String popularity = Integer.toString(album.getPopularity());
+			List<String> genres = album.getGenres();
+			List<Image> images = album.getImages();
+			String image_url = images.get(0).getUrl();
+			Page<SimpleTrack> tracksPage = album.getTracks();
+			
+			List<SimpleTrack> albumTracks = new ArrayList<SimpleTrack>();
+			for (SimpleTrack track: tracksPage.getItems()) {
+				albumTracks.add(track);
+				System.out.println(track.getName() + " : " + track.getId());
+			}
+			
+			Map<String,Object> albumSummary = new HashMap<String,Object>();
+			
+			albumSummary.put("name", name);
+			albumSummary.put("artists", artists);
+			albumSummary.put("popularity", popularity);
+            albumSummary.put("genres", genres);
+            albumSummary.put("image_url", image_url);
+            albumSummary.put("tracks", albumTracks);
+			
+			
+			return albumSummary;
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
