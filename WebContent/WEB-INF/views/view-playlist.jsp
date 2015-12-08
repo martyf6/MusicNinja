@@ -33,7 +33,7 @@
 		
 		<!-- play playlist(?) -->
 		
-		<!-- playlist tracks: -->
+		<!-- playlist tracks Spotify: -->
 		<table class="table table-responsive table-striped table-condensed" id="playlistTracks">
 			<thead>
 				<tr>
@@ -66,7 +66,26 @@
 				  </tr>
 				</c:forEach>
 			</tbody>
-			
+		</table>
+		
+		<!-- playlist track MusicNinjas: -->
+		<table class="table table-responsive table-striped table-condensed" id="playlistTracks">
+			<thead>
+				<tr>
+					<th>SONG</th>
+					<th><span class="glyphicon glyphicon-time" aria-hidden="true"></span></th>
+				</tr>
+			</thead>
+			<tbody>
+				<c:forEach items="${mntracks}" var="track">
+				  <tr>
+				    <td class="track-name" data-track-id="${track.id}">
+				    	<a href="#">${track.name}</a>
+				    </td>
+				    <td>${track.tempo}</td>
+				  </tr>
+				</c:forEach>
+			</tbody>
 		</table>
 	</div>
 	

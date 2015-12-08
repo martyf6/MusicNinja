@@ -51,9 +51,11 @@ We want the ability to type in songs to dynamically add to a profile (or a playl
 Create and add a spotify playlist from the generated recommendations to the user's actual spotify playlists.
 Also look into the ability to add songs to the current playlist (although this should be possible from within the spotify widget)
 
-Artist view page (we just have ajax metadata popup at the moment)
+Playlist view page - add Spotify play widget with handling for over 50 songs
 
-Album view page (currently no clickable album link)
+Artist view page improvements
+
+Album view page improvements
 
 Show a list of recommendations on the playlist view page (via various websites that have recommendation features)
 

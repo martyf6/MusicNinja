@@ -337,6 +337,10 @@ public class EchonestRequests implements IEchonestRequests {
                 System.out.println("\t" + status.get("message"));
 
                 JSONObject artist = resp.getJSONObject("artist");
+                
+                String echoId = artist.get("id").toString();
+                System.out.println("\t" + echoId);
+                
                 String name = artist.get("name").toString();
                 System.out.println("\t" + name);
                 
@@ -355,6 +359,7 @@ public class EchonestRequests implements IEchonestRequests {
                 
                 
                 Map<String,Object> artistSummary = new HashMap<String,Object>();
+                artistSummary.put("id", echoId);
                 artistSummary.put("name", name);
                 artistSummary.put("songs", songs.toString());
                 artistSummary.put("genres", genre_list);
@@ -378,17 +383,23 @@ public class EchonestRequests implements IEchonestRequests {
                 	System.out.println("\t" + bucket + " - " + bucketVal);
                 	artistSummary.put(bucket, bucketVal);
                 }
-                
-                JSONArray foreignBucketVals = artist.getJSONArray("foreign_ids");
-                
-                for (int i=0; i<foreignBucketVals.length(); i++) {
-                	JSONObject foreignBucketVal = foreignBucketVals.getJSONObject(i);
-                	String catalog = foreignBucketVal.getString("catalog");
-                	String foreignId = foreignBucketVal.getString("foreign_id");
-                	System.out.println("\t" + catalog + " - " + foreignId);
-                	artistSummary.put(catalog, foreignId);
+                try {
+	                JSONArray foreignBucketVals = artist.getJSONArray("foreign_ids");
+	                
+	                for (int i=0; i<foreignBucketVals.length(); i++) {
+	                	
+	                	JSONObject foreignBucketVal = foreignBucketVals.getJSONObject(i);
+	                	String catalog = foreignBucketVal.getString("catalog");
+	                	String foreignId = foreignBucketVal.getString("foreign_id");
+	                	System.out.println("\t" + catalog + " - " + foreignId);
+	                	artistSummary.put(catalog, foreignId);
+	                	
+	                }
+                } catch (JSONException e) {
+                    // TODO: handle exception
+                	System.err.println("Failure, no foreign_ids.\n" + e.getMessage());
                 }
-                
+                System.err.println("Made it.");
                 return artistSummary;
 
             } catch (JSONException e) {
@@ -444,6 +455,7 @@ public class EchonestRequests implements IEchonestRequests {
                 Map<String,String> audioSummary = new HashMap<String,String>();
                 audioSummary.put("artist_name", song.get("artist_name").toString());
                 audioSummary.put("title", song.get("title").toString());
+                audioSummary.put("id", song.get("id").toString());
                 
                 for (String bucket : buckets) {
                 	String bucketVal = song.get(bucket).toString();
@@ -472,6 +484,33 @@ public class EchonestRequests implements IEchonestRequests {
         	// TODO: handle exception
         	System.err.println("Failure. " + trackId + ".\n" + e.getMessage());
         }
+		return null;
+	}
+	
+	public static Map<String,String> getAudioSummarySearch(String artistName, String trackTitle) {
+		
+		System.out.println("Getting echonest track info for " + artistName + " - " + trackTitle);
+		
+		SongParams params = new SongParams();
+		params.setArtist(artistName);
+		params.setTitle(trackTitle);
+		try {
+			List<Song> songs = EN.searchSongs(params);
+			System.out.println("\treturned " + songs.size() + " songs.");
+			for(Song song : songs) {
+				System.out.print("\t" + song.getArtistName());
+	            System.out.print("(" + song.getArtistID() + ") - ");
+	            System.out.print(song.getTitle());
+	            System.out.println("(" + song.getID() + ")");
+	            String songId = song.getID();
+	            
+	            Map<String,String> echoFeatures = EchonestRequests.getAudioSummary(songId);
+	            return echoFeatures;
+			}
+		} catch (EchoNestException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return null;
 	}
 	

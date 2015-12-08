@@ -7,10 +7,13 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -33,11 +36,19 @@ import com.echonest.api.v4.GeneralCatalog;
 import com.echonest.api.v4.SongCatalogItem;
 import com.musicninja.echonest.EchonestRequests;
 import com.musicninja.echonest.EchonestRequests.ProfileType;
+import com.musicninja.model.ArtistEntity;
+import com.musicninja.model.PlaylistEntity;
+import com.musicninja.model.PlaylistEntryEntity;
 import com.musicninja.model.ProfileEntity;
 import com.musicninja.model.RedditPlaylistEntity;
+import com.musicninja.model.TrackEntity;
 import com.musicninja.model.UserEntity;
+import com.musicninja.persistence.IArtistDao;
+import com.musicninja.persistence.IPlaylistDao;
+import com.musicninja.persistence.IPlaylistEntryDao;
 import com.musicninja.persistence.IProfileDao;
 import com.musicninja.persistence.IRedditPlaylistDao;
+import com.musicninja.persistence.ITrackDao;
 import com.musicninja.persistence.IUserDao;
 import com.musicninja.reddit.PostPeriod;
 import com.musicninja.reddit.RedditRequests;
@@ -47,9 +58,12 @@ import com.musicninja.spotify.SpotifyRequests;
 import com.musicninja.suggest.PlaylistFilter;
 import com.musicninja.suggest.Preference;
 import com.musicninja.suggest.Preference.Distribution;
+import com.musicninja.suggest.Score;
 import com.wrapper.spotify.models.Page;
 import com.wrapper.spotify.models.Playlist;
 import com.wrapper.spotify.models.PlaylistTrack;
+import com.wrapper.spotify.models.SimpleAlbum;
+import com.wrapper.spotify.models.SimpleArtist;
 import com.wrapper.spotify.models.SimplePlaylist;
 import com.wrapper.spotify.models.SimpleTrack;
 import com.wrapper.spotify.models.Track;
@@ -75,6 +89,18 @@ public class MusicNinjaController {
 	
 	@Autowired
 	private IRedditPlaylistDao redditPlaylistDao;
+	
+	@Autowired
+	private ITrackDao trackDao;
+	
+	@Autowired
+	private IArtistDao artistDao;
+	
+	@Autowired
+	private IPlaylistDao playlistDao;
+	
+	@Autowired
+	private IPlaylistEntryDao playlistEntryDao;
 	
 	@RequestMapping(value = {"/", "/home"}, method = RequestMethod.GET)
 	public String getHomePage(Model model, Principal principal) {
@@ -210,10 +236,31 @@ public class MusicNinjaController {
 		model.addAttribute("name", playlist.getName());
 		model.addAttribute("pid", playlistId);
 		model.addAttribute("owner", playlist.getOwner());
+
+		Collection<PlaylistTrack> ptracks = SpotifyRequests.getPlaylistTracks(user, playlist);
+		model.addAttribute("tracks", ptracks);
 		
-		Collection<PlaylistTrack> tracks = SpotifyRequests.getPlaylistTracks(user, playlist);
+		// create list of all tracks for storing
+		List<Track> tracks = new ArrayList<Track>();
+		for (PlaylistTrack ptrack: ptracks) {
+			Track track = ptrack.getTrack();
+			tracks.add(track);
+		}
 		
-		model.addAttribute("tracks", tracks);
+		// store unstored tracks and return MN tracks
+		List<TrackEntity> mnTrackList = storeTracks(tracks);
+		model.addAttribute("mntracks", mnTrackList);
+		
+		// store/update playlist with proper tracks
+		PlaylistEntity playlistEntity = storePlaylist(playlist, ptracks);				
+		System.out.println("\tPlaylistEntity id: " + playlistEntity.getId());
+		System.out.println("\tPlaylistEntity name: " + playlistEntity.getName());
+		System.out.println("\tPlaylistEntity source: " + playlistEntity.getSource());
+		System.out.println("\tPlaylistEntity sourceId: " + playlistEntity.getSourceId());
+		
+		// Get aggregate scores for the list's songs (if multiple lists, remove duplicates?)
+		// Get min, 20th, median, 80th, max of all values (not genres or year)
+		// Get most common and count for genre and year
 		
 		return "view-playlist";
 	}
@@ -256,12 +303,10 @@ public class MusicNinjaController {
 		
 		String summary = "";
 		for(Entry<String, Object> entry : artistSummary.entrySet()) {
-			//audioSummaryObj.put(entry.getKey(), entry.getValue());
 			summary += entry.getKey() + ": " + entry.getValue() + "<br/>";
 		}
 		
 		for(Entry<String, String> entry : artistSpotifySummary.entrySet()) {
-			//audioSummaryObj.put(entry.getKey(), entry.getValue());
 			summary += entry.getKey() + ": " + entry.getValue() + "<br/>";
 		}
 		
@@ -296,31 +341,19 @@ public class MusicNinjaController {
 		if (artistEchoSummary.containsKey("songs")) {
 			
 			List<Track> topTracks = SpotifyRequests.getArtistTopSongs(artistId);
-			// trackSummaries contains information for each top song from EchoNest
-			List<Object> trackSummaries = new ArrayList<Object>();
+			// mnTrackList has all of the tracks with available Echo info
+			List<TrackEntity> mnTrackList = storeTracks(topTracks);
 			
-			JSONArray topTracksAr = new JSONArray();
-			for (Track t : topTracks) {
-				topTracksAr.put(t.getId());
-			}
-			
-            for (int i = 0; i < topTracksAr.length(); i++) {
-                String trackId = topTracksAr.getString(i);
-                
-            	Map<String,String> audioSummary = EchonestRequests.getAudioSummary("spotify:track:" + trackId);
-                trackSummaries.add(audioSummary);
-            }	
-            
-			
+			// "tracks" is used for spotify player, should be using "mnTrackList"
 			model.addAttribute("tracks", topTracks);
-			// trackSummaries not currently being used in view
-			model.addAttribute("trackSummaries", trackSummaries);
 		}
 		
+		// Move below info to ArtistScore(input=artistEchoSummary,artistSpotifySummary) function?
+		
 		// TODO: get top albums from spotify: By popularity and release date. Need to create SpotifyRequests.getArtistsAlbums
-					// Not sure API can filter on 'market', or else we will get duplicates.
-					// Need to do another search on each album to get popularity and release info	
-		// TODO: go through features programmatically
+			// Not sure API can filter on 'market', or else we will get duplicates.
+			// Need to do another search on each album to get popularity and release info	
+		// TODO: add features to artistInfo programmatically
 		// TODO: return albums, top tracks, genres, and images as objects
 		// info: familiarity, hotttnesss, discovery, facebook, name, lastfm_bio, followers, popularity
 		// genres: objects with 'name' attr (currently from echo, could be from spotify)
@@ -369,8 +402,6 @@ public class MusicNinjaController {
 		
 		UserEntity user = userDao.getUserByUsername(username);
 		
-		// TODO: get Spotify data for album, which includes all tracks
-		// TODO: get Echo data for tracks
 		Map<String,Object> albumSpotifySummary = SpotifyRequests.getAlbumSummary(albumId);
 		
 		// currently delivers:
@@ -378,32 +409,31 @@ public class MusicNinjaController {
 		// discovery (double), facebook (str id), name (str)
 		// track_ids (string), tracks (list map), lastfm_bio (string), image_url (string), followers (string), popularity (string)
 
-		// TODO: get Echonest data for all songs
 		if (albumSpotifySummary.containsKey("tracks")) {
 			
 			Object albumTracks = albumSpotifySummary.get("tracks");
-			List<SimpleTrack> tracks = (List<SimpleTrack>)albumTracks;
-
-			// trackSummaries contains information for each top song from EchoNest
-			List<Object> trackSummaries = new ArrayList<Object>();
+			List<Track> tracks = (List<Track>)albumTracks;
+			
+			// TODO:
+				// Above tracks should be SimpleTracks
+				// Get each as a Track
+				// Store all tracks with storeTracks
 			
 			JSONArray albumTracksAr = new JSONArray();
-			for (SimpleTrack t : tracks) {
+			for (Track t : tracks) {
 				albumTracksAr.put(t.getId());
 			}
 			
-            //for (int i = 0; i < albumTracksAr.length(); i++) {
-                //String trackId = albumTracksAr.getString(i);
-                
-            	// Map<String,String> audioSummary = EchonestRequests.getAudioSummary("spotify:track:" + trackId);
-                // trackSummaries.add(audioSummary);
-            //}	
-            
+			// mnTrackList has all of the tracks with available Echo info
+			List<TrackEntity> mnTrackList = storeTracks(tracks);
 			
 			model.addAttribute("tracks", tracks);
 			// trackSummaries not currently being used in view
 			// model.addAttribute("trackSummaries", trackSummaries);
 		}
+		
+		
+		// Move below info to AlbumScore(input=albumSpotifySummary) function?
 		
 		// TODO: get top albums from spotify: By popularity and release date. Need to create SpotifyRequests.getArtistsAlbums
 					// Not sure API can filter on 'market', or else we will get duplicates.
@@ -1023,4 +1053,247 @@ public class MusicNinjaController {
 		response.put("success", success);
 		response.put("message", message);
 	}
+	
+	
+	private List<TrackEntity> storeTracks(List<Track> tracks) {
+		// TODO:
+		// Decide when to update for hotttnesss, popularity based on last refresh
+		List<TrackEntity> mnTrackList = new ArrayList<TrackEntity>();
+		// List of Spotify tracks not in MN, to be stored 
+		List<Track> tracksToStore = new ArrayList<Track>();
+		
+		for (Track track: tracks) {
+			String spotifyId = track.getId();
+			try {
+				TrackEntity mnTrack = trackDao.getTrackBySpotifyId(spotifyId);
+				if (mnTrack.getEchoId() != null) {
+					System.out.println("\tFound track: " + mnTrack.getName() + " - " + mnTrack.getSpotifyId());
+				} else {
+					System.out.println("\tFound track: " + mnTrack.getName() + " - " + mnTrack.getSpotifyId() + " - No Audio Data");
+				}
+				mnTrackList.add(mnTrack);
+			} catch (Exception e) {
+				System.out.println("\tcould not find track in DB!");
+				tracksToStore.add(track);
+			}
+
+		}
+		Integer echoCounter = 0;
+		for (Track track: tracksToStore) {
+			String spotifyUri = track.getUri(); 
+			
+			if (echoCounter > 19 ) {
+				try {
+				    Thread.sleep(60000);				//1000 milliseconds is one second.
+				} catch(InterruptedException ex) {
+				    Thread.currentThread().interrupt();
+				}
+				echoCounter = 0;
+			}
+			
+			// get Echonest features and store track data (Echo, spotify, artist, album)
+			Map<String,String> echoFeatures = EchonestRequests.getAudioSummary(spotifyUri);
+			echoCounter++;
+			
+			// If null when searching with SpotifyURI, try to search with artist name and track title
+			if (echoFeatures == null) {
+				String artistName = track.getArtists().get(0).getName();
+				String trackTitle = track.getName();
+				// May need two calls, search and audio summary
+				if (echoCounter > 18 ) {
+					try {
+					    Thread.sleep(60000);				//1000 milliseconds is one second.
+					} catch(InterruptedException ex) {
+					    Thread.currentThread().interrupt();
+					}
+					echoCounter = 0;
+				}
+				echoFeatures = EchonestRequests.getAudioSummarySearch(artistName, trackTitle);
+				if (echoFeatures != null) {
+					echoCounter++;
+					echoCounter++;
+				} else {
+					echoCounter++;
+				}
+			}
+			
+			System.out.println("\tEchoCounter " + echoCounter);
+			
+			TrackEntity mnTrack = new TrackEntity();
+			// set all track info
+			mnTrack.setName(track.getName());
+			mnTrack.setSpotifyId(track.getId());
+			mnTrack.setLastRefresh(System.currentTimeMillis() + "");
+			if (echoFeatures != null) {
+				System.out.println("\tTrack EchoId " + echoFeatures.get("id"));
+				mnTrack.setEchoId(echoFeatures.get("id"));
+				mnTrack.setInstrumentalness(Float.parseFloat(echoFeatures.get("instrumentalness")));
+				try {
+					mnTrack.setSpeechiness(Float.parseFloat(echoFeatures.get("speechiness")));
+				} catch (Exception j) {
+					System.out.println("\tNo speechiness for track.");
+				}
+				
+				mnTrack.setTempo(Float.parseFloat(echoFeatures.get("tempo")));
+				
+				// Artists
+				List<SimpleArtist> trackArtists = track.getArtists();
+				Set<ArtistEntity> mnArtists =  new HashSet<ArtistEntity>();
+				
+				for (SimpleArtist artist: trackArtists) {
+					Map<String,Object> artistMap = storeArtist(artist, echoCounter);
+					ArtistEntity mnArtist = (ArtistEntity) artistMap.get("artist");
+					echoCounter = (Integer) artistMap.get("echoCounter");
+					mnTrack.getArtists().add(mnArtist);
+					System.out.println("\ttrack Artists " + mnArtists.toString());
+				}
+		        
+			}
+	        
+	        // Album
+			// get Album => check if stored => storeAlbum
+			// SimpleAlbum trackAlbum = track.getAlbum();
+			// Store Album - return Album object
+				// Check if album stored in MN
+				// If yes:
+					// return album object
+				// If no:
+					// Store album
+					// return album object
+			// Set track album to returned album object
+			System.out.println("\ttrack before storing " + mnTrack.getArtists().toString());
+			
+			trackDao.addTrack(mnTrack);
+	
+			System.out.println("\ttrack added to DB!!");
+			
+			mnTrackList.add(mnTrack);
+		}
+		return mnTrackList;
+		
+	}
+	private Map<String,Object> storeArtist(SimpleArtist artist, Integer echoCounter) {
+		Map<String,Object> artistMap = new HashMap<String,Object>();
+		String spotifyId = artist.getId();
+		String spotifyUri = artist.getUri();
+		try {
+			ArtistEntity mnArtist = artistDao.getArtistBySpotifyId(spotifyId);
+			if (mnArtist.getEchoId() != null) {
+				System.out.println("\tFound artist: " + mnArtist.getName() + " - " + mnArtist.getSpotifyId());
+			} else {
+				System.out.println("\tFound artist: " + mnArtist.getName() + " - " + mnArtist.getSpotifyId() + " - No Audio Data");
+			}
+			artistMap.put("artist", mnArtist);
+			artistMap.put("echoCounter", echoCounter);
+			return artistMap;
+		} catch (Exception e) {
+			System.out.println("\tcould not find Artist in DB!");
+			
+			if (echoCounter > 19 ) {
+				try {
+				    Thread.sleep(60000);                 //1000 milliseconds is one second.
+				} catch(InterruptedException ex) {
+				    Thread.currentThread().interrupt();
+				}
+				echoCounter = 0;
+			}
+			
+			Map<String,Object> echoFeatures = EchonestRequests.getArtistSummary(spotifyUri);
+			echoCounter++;
+			
+			ArtistEntity mnArtist = new ArtistEntity();
+			
+			// set all track info starting with Spotify info
+			mnArtist.setName(artist.getName());
+			mnArtist.setSpotifyId(spotifyId);
+			mnArtist.setLastRefresh(System.currentTimeMillis() + "");
+			// No getPopularity function for Simple Artist
+			// mnartist.setPopularity(artist.getPopularity());
+			
+			// echoFeatures stores Objects rather than Strings, which is forcing toString() on everything
+			// need to add discoveryRank, familiarityRank and other features to Echo request
+			if (echoFeatures != null) {
+				System.out.println("\tEchoId" + echoFeatures.get("id"));
+				mnArtist.setEchoId(echoFeatures.get("id").toString());
+				try {
+					mnArtist.setLastfmBio(echoFeatures.get("lastfm_bio").toString());
+				} catch (Exception j) {
+					System.out.println("\tNo lastfm bio.");
+				}
+				mnArtist.setDiscovery(Float.parseFloat(echoFeatures.get("discovery").toString()));
+				mnArtist.setFamiliarity(Float.parseFloat(echoFeatures.get("familiarity").toString()));
+				mnArtist.setHotttnesss(Float.parseFloat(echoFeatures.get("hotttnesss").toString()));
+			}
+			artistDao.addArtist(mnArtist);
+			
+			System.out.println("\tArtist added to DB!!");
+			
+			artistMap.put("artist", mnArtist);
+			artistMap.put("echoCounter", echoCounter);
+			return artistMap;
+		}
+		
+	}
+	
+	private PlaylistEntity storePlaylist(Playlist playlist, Collection<PlaylistTrack> ptracks) {
+		// TODO: Do not delete track entry, change to inactive
+		// Check if playlist exists
+		PlaylistEntity mnPlaylist = null;
+		String playlistSpotifyId = playlist.getId();
+		try {
+			// If yes, continue
+			mnPlaylist = playlistDao.getPlaylistBySourceId(playlistSpotifyId);
+		} finally {
+			if (mnPlaylist == null){
+				// If not, create playlist
+				mnPlaylist = new PlaylistEntity();
+				mnPlaylist.setName(playlist.getName());
+				mnPlaylist.setSource("spotify");
+				mnPlaylist.setSourceId(playlistSpotifyId);
+				playlistDao.addPlaylist(mnPlaylist);
+			}
+			
+		}
+		
+		Collection<PlaylistEntryEntity> playlistEntries = new ArrayList<PlaylistEntryEntity>();
+		for (PlaylistTrack ptrack: ptracks) {
+			Track track = ptrack.getTrack();
+			String trackSpotifyId = track.getId();
+			TrackEntity mnTrack = trackDao.getTrackBySpotifyId(trackSpotifyId);
+			String addedById = ptrack.getAddedBy().getId();
+			Date addedAt = ptrack.getAddedAt();
+			
+			// Check if playlistEntry exists, add to list
+			
+			try {
+				// If yes, add entry id to list and continue
+				PlaylistEntryEntity mnPlaylistEntry = playlistEntryDao.getPlaylistEntryByInfo(mnTrack, addedById, addedAt);
+				playlistEntries.add(mnPlaylistEntry);
+			} catch (Exception e) {
+				// If no, create entry, add entry_id to list
+				PlaylistEntryEntity mnPlaylistEntry = new PlaylistEntryEntity();
+				mnPlaylistEntry.setPlaylist(mnPlaylist);
+				mnPlaylistEntry.setTrack(mnTrack);
+				mnPlaylistEntry.setAddedAt(addedAt);
+				mnPlaylistEntry.setAddedById(addedById);
+				System.out.println("\tAbout to add playlistEntry");
+				playlistEntryDao.addPlaylistEntry(mnPlaylistEntry);
+				
+				playlistEntries.add(mnPlaylistEntry);
+			}
+			
+			
+		}
+
+		// For all entries with playlist_id == input_playlist_id
+		Collection<PlaylistEntryEntity> allPlaylistEntries = playlistEntryDao.getPlaylistEntriesByPlaylist(mnPlaylist);
+		// Remove 
+		allPlaylistEntries.removeAll(playlistEntries);
+			// If not in list, delete list_entry
+		System.out.println("\tSongs no longer in list" + allPlaylistEntries.toString());
+		
+		return mnPlaylist;
+		
+	}
+	
 }

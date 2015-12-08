@@ -42,7 +42,6 @@
 					<tr>
 						<th>SONG</th>
 						<th>ARTIST</th>
-						<th>ALBUM</th>
 						<th><span class="glyphicon glyphicon-time" aria-hidden="true"></span></th>
 					</tr>
 				</thead>
@@ -57,9 +56,6 @@
 					        <a href="#" data-artist-id="${artist.id}">${artist.name}</a><c:if test="${!loop.last}">, </c:if>
 					      </c:forEach>
 					    </td>
-					    <td class="track-album">
-					    	<a href="/music-ninja/album?aid=${aid}">${info.name}</a>
-					    </td>
 					    <c:set var="tsecs" value="${atrack.duration / 1000}" />
 					    <fmt:formatNumber var="secs" type="number"
 		           			pattern="00" value="${tsecs mod 60}" />
@@ -72,6 +68,9 @@
 			</table>
 		</div>
 	</div>
+	
+	<jsp:include page="/WEB-INF/views/templates/track-info.jsp"/>
+	<jsp:include page="/WEB-INF/views/templates/artist-info.jsp"/>
 	
 	<!-- jQuery -->
 	<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
